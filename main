@@ -1,0 +1,58 @@
+pip install webdriver-manager
+
+
+import os #importem aquest mòdul el quan ens permet manipular rutes
+import csv #importem csv
+from selenium import webdriver #faig 'us de selenium. importo el webdriver per extreure dades de la pag web
+from selenium.webdriver.common.by import By #el By permet importar elements com el ID
+from selenium.webdriver.chrome.service import Service #importo Service per manejar Chrome
+from selenium.webdriver.support.ui import WebDriverWait #necessari per manejar selenium amb chrome
+
+
+from selenium.webdriver.support import expected_conditions as EC #evita errors
+from webdriver_manager.chrome import ChromeDriverManager
+
+# En aquest apartat, defineixo la p[agina web de la qual vull extreure la informaci'o
+url= 'https://www.worlddata.info/average-income.php'
+# Configuración de Selenium para abrir el navegador
+options = webdriver.ChromeOptions()
+options.add_argument('--headless')  # s-afegeix aquest argument per no extreure dades grafiques
+
+# Inicializar el navegador
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+
+# el driver va a buscar la p[agina web definida com a url
+driver.get(url)
+
+# aquesta refer[encia la faig servir per tal que selenium esperi 15s fins que aparegui un element a la taula
+wait = WebDriverWait(driver, 15)  # aqu'i afegim 
+table = wait.until(EC.presence_of_element_located((By.TAG_NAME, "table")))
+
+
+header_row = table.find_elements(By.XPATH, './/th') # s-extrauen els headers de la taula, filtrant per celles th, que son celles header
+headers = [header.text for header in header_row]  # es guarden els elements de capsalera a headers
+
+all_data = [headers]  # la primera fila correspon als headers
+
+# ara busca tots els elements de les files tr.
+rows = table.find_elements(By.XPATH, './/tr')
+
+# trobem totes les dades td
+for row in rows: #iteraci'o a rows
+    cols = row.find_elements(By.TAG_NAME, "td") #es busquen els elements td
+    if cols:
+        row_data = [col.text for col in cols]
+        all_data.append(row_data) #si les files tenen dades td, les dades es guarden a row_data, que s-afegeix a la llista all_data
+
+# es guarden les dades a un csv
+desktop_path = os.path.join(os.path.expanduser("~"), "Desktop", "dataset.csv")
+
+# Guardar los datos en un archivo CSV
+with open(desktop_path, 'w', newline='', encoding='utf-8') as file:
+    writer = csv.writer(file)
+    writer.writerows(all_data)
+
+# Cerrar el navegador
+driver.quit()
+
+print(f"Les dades es troben a '{desktop_path}'")
